@@ -40,20 +40,9 @@
     @else
         <p>Loading preview...</p>
     @endif
-    @if ($document->attachments && $document->attachments->count() > 0)
-        <div class="mt-6">
-            <h3 class="text-lg font-semibold mb-3">Attachments</h3>
-            <div class="space-y-4">
-                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach ($document->attachments as $attachment)
-                        @include('partials.attachment-item', ['attachment' => $attachment, 'level' => 0])
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    @endif
 
-    {{-- @if ($document->attachments && $document->attachments->count() > 0)
+    {{-- ATTACHMENTS SECTION --}}
+    @if ($document->attachments && $document->attachments->count() > 0)
         <div class="mt-6">
             <h3 class="text-lg font-semibold mb-3">Attachments</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -61,32 +50,48 @@
                     <div class="border rounded-xl p-4 shadow-sm bg-white hover:shadow-md transition-shadow duration-300">
                         <div class="flex items-center gap-3">
                             <div class="p-3 rounded-lg bg-blue-50">
-                                @if ($attachment->file_type == 'pdf')
-                                    <flux:icon.document class="w-6 h-6 text-blue-600"/>
+                                @if (strtolower($attachment->file_type) == 'pdf' || \Illuminate\Support\Str::endsWith(strtolower($attachment->file_url ?? ''), '.pdf'))
+                                    {{-- PDF Icon --}}
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
                                 @else
-                                    <flux:icon.photo class="w-6 h-6 text-emerald-600"/>
+                                    {{-- Image/File Icon --}}
+                                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
                                 @endif
                             </div>
                             
                             <div class="flex items-center justify-between flex-1 min-w-0">
-                                <p class="font-semibold text-sm text-gray-800 truncate">
-                                    {{ $attachment->name }}
+                                <p class="font-semibold text-sm text-gray-800 truncate" title="{{ $attachment->name ?? 'Unnamed Attachment' }}">
+                                    {{ $attachment->name ?? 'Unnamed Attachment' }}
                                 </p>
                                 <button type="button"
-                                        class="ml-3 text-gray-500 hover:text-red-600 transition-colors duration-200 shrink-0"
-                                        wire:click="viewAttachment('{{ $attachment->id }}')">
-                                    <flux:icon.eye class="w-5 h-5"/>
+                                        class="ml-3 text-gray-500 hover:text-blue-600 transition-colors duration-200 shrink-0"
+                                        wire:click="viewAttachment({{ $attachment->id }})"
+                                        wire:loading.attr="disabled">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
                                 </button>
                             </div>
-
                         </div>
                     </div>
-
                 @endforeach
             </div>
         </div>
-    @endif --}}
+    @else
+        <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-3">Attachments</h3>
+            <div class="bg-gray-100 rounded-lg p-4 text-center">
+                <p class="text-gray-500">No attachments found for this document.</p>
+            </div>
+        </div>
+    @endif
     
+    {{-- BUTTONS SECTION --}}
     @if(
         (
             $document->document_level != 'Intra' &&
@@ -114,7 +119,6 @@
             @if ($document->status == 'pending' || $document->status == 'sent')
                 <div class="mt-4 flex gap-4">
                     <button wire:click="generate" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Generate IOM</button>
-                    {{-- <button wire:click="generate" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">{{ $document->status == 'pending'?'Generate IOM':'View IOM' }}</button> --}}
                 </div>
             @else
                 <div class="mt-4 text-lg font-semibold">
@@ -124,27 +128,48 @@
         @elseif ($office_name == 'Records Section' && $document->document_type_id == 2)
             <div class="mt-4 flex gap-4">
                 <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Send out IOM</button>
-                {{-- <button wire:click="generate" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">{{ $document->status == 'pending'?'Generate IOM':'View IOM' }}</button> --}}
             </div>
         @endif
     @endif
 
+    {{-- ATTACHMENT PREVIEW MODAL --}}
     <flux:modal name="view-attachment-modal" class="max-w-5xl w-full">
         <div class="space-y-4">
             <div class="flex items-center justify-between">
                 <flux:heading size="lg">Attachment Preview</flux:heading>
             </div>
+            
             @if ($selectedAttachment)
-                <div class="border rounded-lg overflow-hidden">
-                    @if ($selectedAttachment->file_type == 'pdf')
+                <div class="border rounded-lg overflow-hidden bg-white">
+                    @if (strtolower($selectedAttachment->file_type) == 'pdf' || \Illuminate\Support\Str::endsWith(strtolower($selectedAttachment->file_url ?? ''), '.pdf'))
+                        {{-- PDF Preview --}}
                         @if ($attachmentPreviewUrl)
-                            <iframe src="{{ $attachmentPreviewUrl }}" class="w-full h-[600px] border rounded" frameborder="0"></iframe>
+                            <iframe src="{{ $attachmentPreviewUrl }}" class="w-full h-[600px] border-0" frameborder="0"></iframe>
                         @else
-                            <p>Loading preview...</p>
+                            <div class="p-8 text-center">
+                                <p class="text-gray-500">Loading PDF preview...</p>
+                            </div>
                         @endif
                     @else
-                        <img src="{{ $attachmentPreviewUrl }}" class="w-full max-h-[700px] object-contain" alt="Attachment Preview">
+                        {{-- Image/Other File Preview --}}
+                        @if ($attachmentPreviewUrl)
+                            <img src="{{ $attachmentPreviewUrl }}" 
+                                 class="w-full max-h-[700px] object-contain" 
+                                 alt="Attachment Preview: {{ $selectedAttachment->name ?? 'Attachment' }}"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="display: none;" class="p-8 text-center">
+                                <p class="text-gray-500">Cannot display preview</p>
+                            </div>
+                        @else
+                            <div class="p-8 text-center">
+                                <p class="text-gray-500">Loading preview...</p>
+                            </div>
+                        @endif
                     @endif
+                </div>
+            @else
+                <div class="p-8 text-center">
+                    <p class="text-gray-500">No attachment selected or attachment not found.</p>
                 </div>
             @endif
         </div>
