@@ -546,7 +546,6 @@
 
             fileInput.addEventListener('change', function(e) {
                 handleFiles(e.target.files);
-              //  e.target.value = '';
             });
 
             // Add drag and drop support
