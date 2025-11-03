@@ -362,8 +362,9 @@
             @endforeach
         </div>
     </div>
+    @endif
 
-    <!-- Attachments Section -->
+    <!-- Attachments Section - MOVED OUTSIDE THE CONDITIONAL BLOCK -->
     <div class="mb-8">
         <label for="attachments" class="block text-sm font-medium text-gray-900 mb-2">
             {{ __('Attachments') }} <span class="text-gray-500 text-xs">(Max 100MB per file)</span>
@@ -471,7 +472,6 @@
             </div>
         </div>
     </div>
-    @endif
 
     <!-- Form Actions -->
     <div class="flex flex-col-reverse sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
@@ -546,8 +546,7 @@
 
             fileInput.addEventListener('change', function(e) {
                 handleFiles(e.target.files);
-                // Reset the input to allow uploading same files again
-                e.target.value = '';
+              //  e.target.value = '';
             });
 
             // Add drag and drop support
