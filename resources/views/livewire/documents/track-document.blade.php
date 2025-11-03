@@ -6,6 +6,7 @@
   <title>DTS-ZPPSU | Document Tracking System</title>
   <link rel="icon" type="image/png" href="{{ asset('assets/img/hd-logo.png') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  @livewireStyles
   <style>
     :root {
       --primary: #800000;
@@ -219,7 +220,6 @@
       background-color: rgba(128, 0, 0, 0.1);
     }
 
-    /* Additional styles for advanced features */
     .document-details {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -397,34 +397,6 @@
       color: var(--dark-gray);
     }
 
-    .document-preview {
-      margin: 20px 0;
-      border: 1px solid #eee;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    .preview-header {
-      background-color: var(--light-gray);
-      padding: 10px 15px;
-      font-weight: 500;
-    }
-
-    .preview-content {
-      padding: 15px;
-      min-height: 150px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-    }
-
-    .preview-content i {
-      font-size: 48px;
-      color: var(--dark-gray);
-      margin-bottom: 15px;
-    }
-
     .progress-info {
       display: flex;
       justify-content: space-between;
@@ -444,7 +416,6 @@
       font-size: 14px;
     }
 
-    /* Toggle Switch */
     .switch {
       position: relative;
       display: inline-block;
@@ -488,6 +459,21 @@
 
     input:checked + .slider:before {
       transform: translateX(26px);
+    }
+
+    .status-text {
+        color: #3a3838ff;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        margin-left: 0.5rem;
+        display: inline-block;
+        transition: all 0.3s ease;
     }
 
     @media (max-width: 768px) {
@@ -652,22 +638,6 @@
         <span class="status-value" id="current-status-text">
             {{ ucfirst($document->status) }}
         </span>
-        <style>
-        .status-text {
-            color: #3a3838ff;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        .status-value {
-            font-size: 0.875rem;
-            font-weight: 600;
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.375rem;
-            margin-left: 0.5rem;
-            display: inline-block;
-            transition: all 0.3s ease;
-        }
-        </style>
         </div>
       </div>
 
@@ -764,119 +734,92 @@
     </div>
   </div>
 
+  @livewireScripts
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Extract document data from the PHP template variables with safe fallbacks
-      const documentData = {
-        id: '{{ $document->document_number }}',
-        subject: '{{ $document->subject }}',
-        type: '{{ $document->documentType->name ?? $document->type ?? "RLM" }}',
-        priority: '{{ $document->priority_level ?? $document->priority ?? "Normal" }}',
-        status: '{{ strtolower($document->status) }}',
-        createdDate: '{{ $document->created_at->format("M d, Y") }}',
-        expectedCompletion: '{{ $document->expected_completion_date ?? $document->expected_completion ?? "" }}',
-        assignedTo: document.getElementById('assigned-to').textContent.trim(),
-        statusDates: {
-          filed: document.getElementById('date-filed').textContent.trim(),
-          sent: document.getElementById('date-sent').textContent.trim(),
-          processing: document.getElementById('date-processing').textContent.trim(),
-          completed: document.getElementById('date-completed').textContent.trim()
-        },
-        timeline: [
-          { 
-            date: '{{ $document->created_at->format("M d, Y") }}', 
-            title: 'Document Created', 
-            description: 'Document drafted and prepared for submission' 
-          }
-          @if($document->status_logs)
-            @php
-              $filedLog = $document->status_logs->where('status', 'filed')->first();
-              $sentLog = $document->status_logs->where('status', 'sent')->first();
-              $processingLog = $document->status_logs->where('status', 'processing')->first();
-              $completedLog = $document->status_logs->where('status', 'completed')->first();
-            @endphp
-            @if($filedLog)
-            ,{
-              date: '{{ $filedLog->created_at->format("M d, h:i A") }}',
-              title: 'Document Filed',
-              description: 'Document officially filed in the system'
-            }
-            @endif
-            @if($sentLog)
-            ,{
-              date: '{{ $sentLog->created_at->format("M d, h:i A") }}',
-              title: 'Document Sent',
-              description: 'Document forwarded to ' + document.getElementById('assigned-to').textContent.trim() + ' for review'
-            }
-            @endif
-            @if($processingLog)
-            ,{
-              date: '{{ $processingLog->created_at->format("M d, h:i A") }}',
-              title: 'Document Processing',
-              description: 'Document is being reviewed and processed'
-            }
-            @endif
-            @if($completedLog)
-            ,{
-              date: '{{ $completedLog->created_at->format("M d, h:i A") }}',
-              title: 'Document Completed',
-              description: 'Document processing has been completed'
-            }
-            @endif
-          @endif
-        ],
-        activityLogs: []
-      };
-
       // Initialize the tracking system
-      initTrackingSystem(documentData);
+      initTrackingSystem();
 
-      // Function to initialize the tracking system
-      function initTrackingSystem(data) {
-        console.log('Initializing tracking system with status:', data.status);
+      function initTrackingSystem() {
+        console.log('Initializing Livewire tracking system');
         
-        // Update status indicators using DYNAMIC SYSTEM ONLY
-        updateStatusIndicators(data.status);
+        // Get initial data from the page
+        const initialData = getInitialDataFromPage();
+        
+        // Update status indicators
+        updateStatusIndicators(initialData.status);
         
         // Build timeline
-        buildTimeline(data.timeline);
+        buildTimeline(initialData.timeline);
         
         // Add event listeners
         addEventListeners();
         
-        // Start real-time updates
-        startRealTimeUpdates();
+        // Start Livewire real-time updates
+        startLivewireUpdates();
       }
 
-      // DYNAMIC PROGRESS SYSTEM - Calculates progress based on status index
+      function getInitialDataFromPage() {
+        return {
+          id: document.getElementById('document-number').textContent,
+          status: '{{ $document->status }}',
+          timeline: @json($trackingData['timeline'] ?? []),
+          activityLogs: @json($trackingData['activityLogs'] ?? [])
+        };
+      }
+
+      function startLivewireUpdates() {
+        // Use Livewire to get updates every 15 seconds
+        setInterval(() => {
+          Livewire.dispatch('refreshTracking');
+        }, 15000);
+        
+        // Listen for Livewire updates
+        Livewire.on('trackingUpdated', (data) => {
+          console.log('Livewire update received:', data);
+          updateTrackingUI(data);
+        });
+
+        // Also check when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden) {
+            Livewire.dispatch('refreshTracking');
+          }
+        });
+      }
+
       function updateStatusIndicators(status) {
         console.log('Updating status indicators for:', status);
         
-        const steps = ['filed', 'sent', 'processing', 'completed'];
-        const statusIndex = steps.indexOf(status);
+        // Normalize status names
+        const normalizedStatus = normalizeStatus(status);
         
-        console.log('Status index:', statusIndex);
+        const steps = ['filed', 'sent', 'processing', 'completed'];
+        const statusIndex = steps.indexOf(normalizedStatus);
+        
+        console.log('Normalized status:', normalizedStatus, 'Index:', statusIndex);
         
         // Update status badge
         const statusBadge = document.getElementById('status-badge');
-        statusBadge.className = 'status-badge ' + status;
-        statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        statusBadge.className = 'status-badge ' + normalizedStatus;
+        statusBadge.textContent = getStatusDisplayText(status);
         
         // Update current status text
         const currentStatusText = document.getElementById('current-status-text');
-        currentStatusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        currentStatusText.textContent = getStatusDisplayText(status);
         
-        // Update status colors dynamically
+        // Update status colors
         const statusColor = getStatusColor(status);
         const bgColor = getStatusBgColor(status);
         currentStatusText.style.color = statusColor;
         currentStatusText.style.backgroundColor = bgColor;
         
         // Update document status in courier info
-        document.getElementById('document-status').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        document.getElementById('document-status').textContent = getStatusDisplayText(status);
         
         if (statusIndex === -1) {
-          console.log('Status not found in steps array');
+          console.log('Status not found in steps array, defaulting to processing');
+          updateStatusIndicators('processing');
           return;
         }
         
@@ -910,37 +853,64 @@
           }
         }
         
-        // DYNAMIC PROGRESS CALCULATION - Based on status index
+        // Dynamic progress calculation
         const progressBar = document.getElementById('progress-bar');
         const progressPercentage = (statusIndex / (steps.length - 1)) * 100;
         progressBar.style.width = `${progressPercentage}%`;
         
-        console.log('Dynamic progress calculation - Status:', status, 'Index:', statusIndex, 'Progress:', progressPercentage + '%');
+        console.log('Dynamic progress - Status:', status, 'Index:', statusIndex, 'Progress:', progressPercentage + '%');
       }
       
-      // Function to get status color
+      function normalizeStatus(status) {
+        const statusMap = {
+          'filed': 'filed',
+          'sent': 'sent',
+          'processing': 'processing',
+          'in_progress': 'processing',
+          'approved': 'processing',
+          'completed': 'completed',
+          'done': 'completed',
+          'finished': 'completed'
+        };
+        
+        return statusMap[status.toLowerCase()] || 'processing';
+      }
+      
+      function getStatusDisplayText(status) {
+        const displayMap = {
+          'filed': 'Filed',
+          'sent': 'Sent',
+          'processing': 'Processing',
+          'in_progress': 'In Progress',
+          'approved': 'Approved',
+          'completed': 'Completed'
+        };
+        
+        return displayMap[status.toLowerCase()] || 'In Progress';
+      }
+      
       function getStatusColor(status) {
-        switch(status) {
+        switch(status.toLowerCase()) {
           case 'filed': return '#2196f3';
           case 'sent': return '#ff9800';
           case 'processing': return '#4caf50';
+          case 'approved': return '#4caf50';
           case 'completed': return '#0e743c';
           default: return '#6B7280';
         }
       }
       
-      // Function to get status background color
       function getStatusBgColor(status) {
-        switch(status) {
+        switch(status.toLowerCase()) {
           case 'filed': return '#e3f2fd';
           case 'sent': return '#fff3e0';
           case 'processing': return '#e8f5e9';
+          case 'approved': return '#e8f5e9';
           case 'completed': return '#f3f4f6';
           default: return '#F3F4F6';
         }
       }
       
-      // Function to build timeline
       function buildTimeline(timelineData) {
         const timelineContainer = document.getElementById('document-timeline');
         timelineContainer.innerHTML = '';
@@ -961,7 +931,6 @@
         });
       }
       
-      // Function to add event listeners
       function addEventListeners() {
         // History link
         document.getElementById('history-link').addEventListener('click', function(e) {
@@ -971,15 +940,14 @@
         
         // Share button
         document.getElementById('share-btn').addEventListener('click', function() {
-          const shareUrl = `${window.location.origin}/tracking/${documentData.id}`;
+          const shareUrl = `${window.location.origin}/tracking/${document.getElementById('document-number').textContent}`;
           if (navigator.share) {
             navigator.share({
               title: 'Document Tracking',
-              text: `Track document ${documentData.id}`,
+              text: `Track document ${document.getElementById('document-number').textContent}`,
               url: shareUrl
             });
           } else {
-            // Fallback for browsers that don't support Web Share API
             navigator.clipboard.writeText(shareUrl).then(() => {
               alert('Tracking link copied to clipboard!');
             });
@@ -1006,43 +974,11 @@
         });
       }
 
-      // Function to start real-time updates
-      function startRealTimeUpdates() {
-        // Check for updates every 30 seconds
-        setInterval(fetchDocumentUpdates, 30000);
-        
-        // Also check immediately on page load
-        fetchDocumentUpdates();
-      }
-      
-      // Function to fetch document updates from the server
-      function fetchDocumentUpdates() {
-        const documentId = documentData.id;
-        
-        fetch(`/api/documents/${documentId}/tracking`)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
-          .then(updatedData => {
-            // Update the UI with the new data using DYNAMIC SYSTEM
-            updateTrackingUI(updatedData);
-          })
-          .catch(error => {
-            console.error('Error fetching document updates:', error);
-          });
-      }
-      
-      // Function to update the tracking UI with new data
       function updateTrackingUI(updatedData) {
+        console.log('Updating UI with new data:', updatedData);
+        
         // Update status if changed
-        if (updatedData.status && updatedData.status !== documentData.status) {
-          console.log('Status changed from', documentData.status, 'to', updatedData.status);
-          documentData.status = updatedData.status;
-          
-          // Use DYNAMIC SYSTEM to update all indicators
+        if (updatedData.status) {
           updateStatusIndicators(updatedData.status);
           
           // Show notification if enabled
@@ -1052,8 +988,7 @@
         }
         
         // Update assigned to if changed
-        if (updatedData.assignedTo && updatedData.assignedTo !== documentData.assignedTo) {
-          documentData.assignedTo = updatedData.assignedTo;
+        if (updatedData.assignedTo) {
           document.getElementById('assigned-to').textContent = updatedData.assignedTo;
         }
         
@@ -1062,14 +997,12 @@
           Object.keys(updatedData.statusDates).forEach(status => {
             if (updatedData.statusDates[status] && updatedData.statusDates[status] !== '-') {
               document.getElementById(`date-${status}`).textContent = updatedData.statusDates[status];
-              documentData.statusDates[status] = updatedData.statusDates[status];
             }
           });
         }
         
         // Update timeline if available
-        if (updatedData.timeline && updatedData.timeline.length > documentData.timeline.length) {
-          documentData.timeline = updatedData.timeline;
+        if (updatedData.timeline && updatedData.timeline.length > 0) {
           buildTimeline(updatedData.timeline);
         }
         
@@ -1079,7 +1012,6 @@
         }
       }
       
-      // Function to update activity logs
       function updateActivityLogs(newLogs) {
         const activityLogsContainer = document.getElementById('activity-logs');
         
@@ -1120,7 +1052,6 @@
         });
       }
       
-      // Function to show status change notification
       function showStatusChangeNotification(newStatus) {
         // Create notification element
         const notification = document.createElement('div');
@@ -1134,7 +1065,7 @@
         
         notification.innerHTML = `
           <i class="fas fa-bell"></i>
-          <span>Document status updated to: ${newStatus}</span>
+          <span>Document status updated to: ${getStatusDisplayText(newStatus)}</span>
           <button style="margin-left: auto; background: none; border: none; cursor: pointer;">
             <i class="fas fa-times"></i>
           </button>
