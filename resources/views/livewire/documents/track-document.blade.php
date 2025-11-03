@@ -649,24 +649,7 @@
       <div class="progress-info">
         <div>
         <span class="status-text">Current Status:</span>
-        <span class="status-value" id="current-status-text" 
-          style="@php
-              $statusColor = match(strtolower($document->status)) {
-              'filed' => '#2196f3',
-              'sent' => '#ff9800',
-              'processing' => '#4caf50',
-              'completed' => '#0e743c',
-              default => '#6B7280'
-              };
-              $bgColor = match(strtolower($document->status)) {
-              'filed' => '#e3f2fd',
-              'sent' => '#fff3e0',
-              'processing' => '#e8f5e9',
-              'completed' => '#f3f4f6',
-              default => '#F3F4F6'
-              };
-              echo "color: {$statusColor}; background-color: {$bgColor};";
-          @endphp">
+        <span class="status-value" id="current-status-text">
             {{ ucfirst($document->status) }}
         </span>
         <style>
@@ -708,17 +691,6 @@
         </div>
         <a href="#" class="tracking-link" id="history-link">View History <i class="fas fa-external-link-alt"></i></a>
       </div>
-
-    <!--  <div class="document-preview">
-        <div class="preview-header">Document Preview</div>
-        <div class="preview-content">
-          <i class="fas fa-file-pdf"></i>
-          <p>{{ $document->document_number }}_document.pdf</p>
-          <button class="btn btn-outline" style="margin-top: 10px;">
-            <i class="fas fa-download"></i> Download Document
-          </button>
-        </div>
-      </div> -->
 
       <div class="timeline-container">
         <h3>Document Timeline</h3>
@@ -820,6 +792,8 @@
             @php
               $filedLog = $document->status_logs->where('status', 'filed')->first();
               $sentLog = $document->status_logs->where('status', 'sent')->first();
+              $processingLog = $document->status_logs->where('status', 'processing')->first();
+              $completedLog = $document->status_logs->where('status', 'completed')->first();
             @endphp
             @if($filedLog)
             ,{
@@ -835,6 +809,20 @@
               description: 'Document forwarded to ' + document.getElementById('assigned-to').textContent.trim() + ' for review'
             }
             @endif
+            @if($processingLog)
+            ,{
+              date: '{{ $processingLog->created_at->format("M d, h:i A") }}',
+              title: 'Document Processing',
+              description: 'Document is being reviewed and processed'
+            }
+            @endif
+            @if($completedLog)
+            ,{
+              date: '{{ $completedLog->created_at->format("M d, h:i A") }}',
+              title: 'Document Completed',
+              description: 'Document processing has been completed'
+            }
+            @endif
           @endif
         ],
         activityLogs: []
@@ -845,33 +833,52 @@
 
       // Function to initialize the tracking system
       function initTrackingSystem(data) {
-        // Update status indicators
+        console.log('Initializing tracking system with status:', data.status);
+        
+        // Update status indicators using DYNAMIC SYSTEM ONLY
         updateStatusIndicators(data.status);
         
         // Build timeline
         buildTimeline(data.timeline);
         
-        // Update time remaining
-        updateTimeRemaining(data.expectedCompletion);
-        
         // Add event listeners
         addEventListeners();
+        
+        // Start real-time updates
+        startRealTimeUpdates();
       }
 
-      // Function to update status indicators
+      // DYNAMIC PROGRESS SYSTEM - Calculates progress based on status index
       function updateStatusIndicators(status) {
+        console.log('Updating status indicators for:', status);
+        
         const steps = ['filed', 'sent', 'processing', 'completed'];
         const statusIndex = steps.indexOf(status);
+        
+        console.log('Status index:', statusIndex);
         
         // Update status badge
         const statusBadge = document.getElementById('status-badge');
         statusBadge.className = 'status-badge ' + status;
+        statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         
         // Update current status text
-        document.getElementById('current-status-text').textContent = 
-          status.charAt(0).toUpperCase() + status.slice(1);
+        const currentStatusText = document.getElementById('current-status-text');
+        currentStatusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         
-        if (statusIndex === -1) return;
+        // Update status colors dynamically
+        const statusColor = getStatusColor(status);
+        const bgColor = getStatusBgColor(status);
+        currentStatusText.style.color = statusColor;
+        currentStatusText.style.backgroundColor = bgColor;
+        
+        // Update document status in courier info
+        document.getElementById('document-status').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        
+        if (statusIndex === -1) {
+          console.log('Status not found in steps array');
+          return;
+        }
         
         // Reset all steps
         steps.forEach(step => {
@@ -885,7 +892,7 @@
           date.classList.remove('active');
         });
         
-        // Set appropriate classes for each step
+        // Set appropriate classes for each step based on current status
         for (let i = 0; i <= statusIndex; i++) {
           const stepElement = document.getElementById(`step-${steps[i]}`);
           const icon = stepElement.querySelector('.status-icon');
@@ -893,18 +900,44 @@
           const date = stepElement.querySelector('.status-date');
           
           if (i < statusIndex) {
+            // Previous steps are completed
             icon.classList.add('completed');
           } else {
+            // Current step is active
             icon.classList.add('active');
             label.classList.add('active');
             date.classList.add('active');
           }
         }
         
-        // Update progress bar
+        // DYNAMIC PROGRESS CALCULATION - Based on status index
         const progressBar = document.getElementById('progress-bar');
         const progressPercentage = (statusIndex / (steps.length - 1)) * 100;
         progressBar.style.width = `${progressPercentage}%`;
+        
+        console.log('Dynamic progress calculation - Status:', status, 'Index:', statusIndex, 'Progress:', progressPercentage + '%');
+      }
+      
+      // Function to get status color
+      function getStatusColor(status) {
+        switch(status) {
+          case 'filed': return '#2196f3';
+          case 'sent': return '#ff9800';
+          case 'processing': return '#4caf50';
+          case 'completed': return '#0e743c';
+          default: return '#6B7280';
+        }
+      }
+      
+      // Function to get status background color
+      function getStatusBgColor(status) {
+        switch(status) {
+          case 'filed': return '#e3f2fd';
+          case 'sent': return '#fff3e0';
+          case 'processing': return '#e8f5e9';
+          case 'completed': return '#f3f4f6';
+          default: return '#F3F4F6';
+        }
       }
       
       // Function to build timeline
@@ -926,36 +959,6 @@
           
           timelineContainer.appendChild(timelineItem);
         });
-      }
-      
-      // Function to update time remaining
-      function updateTimeRemaining(expectedDate) {
-        const timeRemainingElement = document.getElementById('time-remaining');
-        
-        if (!expectedDate || expectedDate.trim() === '') {
-          timeRemainingElement.textContent = '-';
-          return;
-        }
-        
-        const expected = new Date(expectedDate);
-        const now = new Date();
-        
-        // Check if date is valid
-        if (isNaN(expected.getTime())) {
-          timeRemainingElement.textContent = '-';
-          return;
-        }
-        
-        const diffTime = expected - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays > 0) {
-          timeRemainingElement.textContent = `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
-        } else if (diffDays === 0) {
-          timeRemainingElement.textContent = 'Due today';
-        } else {
-          timeRemainingElement.textContent = 'Overdue';
-        }
       }
       
       // Function to add event listeners
@@ -1003,16 +1006,153 @@
         });
       }
 
-      // Original progress calculation function (preserved from original code)
-      const progressLine = document.querySelector('.progress-line-active');
-      const currentStatus = '{{ strtolower($document->status) }}';
-
-      switch(currentStatus) {
-        case 'filed': progressLine.style.width = '0%'; break;
-        case 'sent': progressLine.style.width = '33%'; break;
-        case 'processing': progressLine.style.width = '66%'; break;
-        case 'completed': progressLine.style.width = '100%'; break;
-        default: progressLine.style.width = '0%';
+      // Function to start real-time updates
+      function startRealTimeUpdates() {
+        // Check for updates every 30 seconds
+        setInterval(fetchDocumentUpdates, 30000);
+        
+        // Also check immediately on page load
+        fetchDocumentUpdates();
+      }
+      
+      // Function to fetch document updates from the server
+      function fetchDocumentUpdates() {
+        const documentId = documentData.id;
+        
+        fetch(`/api/documents/${documentId}/tracking`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(updatedData => {
+            // Update the UI with the new data using DYNAMIC SYSTEM
+            updateTrackingUI(updatedData);
+          })
+          .catch(error => {
+            console.error('Error fetching document updates:', error);
+          });
+      }
+      
+      // Function to update the tracking UI with new data
+      function updateTrackingUI(updatedData) {
+        // Update status if changed
+        if (updatedData.status && updatedData.status !== documentData.status) {
+          console.log('Status changed from', documentData.status, 'to', updatedData.status);
+          documentData.status = updatedData.status;
+          
+          // Use DYNAMIC SYSTEM to update all indicators
+          updateStatusIndicators(updatedData.status);
+          
+          // Show notification if enabled
+          if (document.getElementById('notification-toggle').checked) {
+            showStatusChangeNotification(updatedData.status);
+          }
+        }
+        
+        // Update assigned to if changed
+        if (updatedData.assignedTo && updatedData.assignedTo !== documentData.assignedTo) {
+          documentData.assignedTo = updatedData.assignedTo;
+          document.getElementById('assigned-to').textContent = updatedData.assignedTo;
+        }
+        
+        // Update status dates if available
+        if (updatedData.statusDates) {
+          Object.keys(updatedData.statusDates).forEach(status => {
+            if (updatedData.statusDates[status] && updatedData.statusDates[status] !== '-') {
+              document.getElementById(`date-${status}`).textContent = updatedData.statusDates[status];
+              documentData.statusDates[status] = updatedData.statusDates[status];
+            }
+          });
+        }
+        
+        // Update timeline if available
+        if (updatedData.timeline && updatedData.timeline.length > documentData.timeline.length) {
+          documentData.timeline = updatedData.timeline;
+          buildTimeline(updatedData.timeline);
+        }
+        
+        // Update activity logs if available
+        if (updatedData.activityLogs && updatedData.activityLogs.length > 0) {
+          updateActivityLogs(updatedData.activityLogs);
+        }
+      }
+      
+      // Function to update activity logs
+      function updateActivityLogs(newLogs) {
+        const activityLogsContainer = document.getElementById('activity-logs');
+        
+        newLogs.forEach(log => {
+          // Check if this log already exists
+          const existingLogs = activityLogsContainer.querySelectorAll('.update-card');
+          let logExists = false;
+          
+          existingLogs.forEach(existingLog => {
+            const logTime = existingLog.querySelector('.update-time').textContent;
+            if (logTime === log.created_at) {
+              logExists = true;
+            }
+          });
+          
+          if (!logExists) {
+            // Add the new log at the top
+            const logElement = document.createElement('div');
+            logElement.className = 'update-card';
+            
+            let iconClass = 'fas fa-info-circle';
+            if (log.action === 'Document Sent') {
+              iconClass = 'fas fa-share-square';
+            }
+            
+            logElement.innerHTML = `
+              <div class="update-icon">
+                <i class="${iconClass}"></i>
+              </div>
+              <div>
+                <div>${log.description}</div>
+                <div class="update-time">${log.created_at}</div>
+              </div>
+            `;
+            
+            activityLogsContainer.insertBefore(logElement, activityLogsContainer.firstChild);
+          }
+        });
+      }
+      
+      // Function to show status change notification
+      function showStatusChangeNotification(newStatus) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'alert-banner';
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '1000';
+        notification.style.maxWidth = '300px';
+        notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        
+        notification.innerHTML = `
+          <i class="fas fa-bell"></i>
+          <span>Document status updated to: ${newStatus}</span>
+          <button style="margin-left: auto; background: none; border: none; cursor: pointer;">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Add click event to close button
+        notification.querySelector('button').addEventListener('click', function() {
+          document.body.removeChild(notification);
+        });
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 5000);
       }
     });
   </script>
